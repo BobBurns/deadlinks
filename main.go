@@ -81,14 +81,16 @@ func main() {
 	  return
 	}
 	//fmt.Println("fetching... ", curlin.uri)
-	s, c, err := fetchStatus(curlin.uri)
+	resp, err := fetchStatus(curlin.uri)
 
 	if err != nil {
 //	  fmt.Println("Errors found: ", err)
 	  curlin.status = err.Error()
 	} else {
-	  curlin.status = s
-	  curlin.scode = c
+	  curlin.status = resp.Status
+	  curlin.scode = resp.StatusCode
+	  // help mem leaks
+	  resp.Body.Close()
 	}
 	queue <- curlin
       }(links[i])
@@ -152,7 +154,7 @@ func fetchBody (uri string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func fetchStatus (uri string) (string, int, error) {
+func fetchStatus (uri string) (*http.Response , error) {
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
@@ -162,15 +164,18 @@ func fetchStatus (uri string) (string, int, error) {
 	client := http.Client{Transport: transport, Timeout: timeout}
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-		return "", 0, err
+		//return "", 0, err
+		return nil, err
 	}
 
 	// politeness
 	req.Header.Set("User-Agent", AGENT)
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", 0, err
+		//return "", 0, err
+		return nil, err
 	}
 
-	return resp.Status, resp.StatusCode, nil
+	//return resp.Status, resp.StatusCode, nil
+	return resp, nil
 }
