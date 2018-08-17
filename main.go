@@ -99,6 +99,7 @@ func main() {
     wg.Wait()
     close(queue)
 
+    fmt.Println()
     for qlink := range queue {
       if *aFlag || qlink.scode != 200 {
 	fmt.Printf("[%d]\t%s\t%s\n", qlink.scode, qlink.uri, qlink.status)
