@@ -63,14 +63,19 @@ func main() {
       curlin := Link{
 	uri: fixUrl(ln, base),
       }
+      if curlin.uri == "" {
+	return
+      }
       fmt.Println("fetching... ", curlin.uri)
       s, c, err := fetchStatus(curlin.uri)
 
       if err != nil {
 	fmt.Println("Errors found: ", err)
+	curlin.status = err.Error()
+      } else {
+	curlin.status = s
+	curlin.scode = c
       }
-      curlin.status = s
-      curlin.scode = c
       queue <- curlin
     }(l)
 
@@ -92,7 +97,7 @@ func main() {
 
 func fixUrl(href, base string) string {
 	uri, err := url.Parse(href)
-	if err != nil {
+	if err != nil || uri.Scheme == "mailto" {
 		return ""
 	}
 	baseUrl, err := url.Parse(base)
