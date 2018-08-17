@@ -56,6 +56,7 @@ func main() {
   start := 0
   done := false
   n := len(links)
+  broken := 0
   limit := 10
   for {
     if n - start < 10 {
@@ -105,6 +106,9 @@ func main() {
     for qlink := range queue {
       if *aFlag || qlink.scode != 200 {
 	fmt.Printf("[%d]\t%s\t%s\n", qlink.scode, qlink.uri, qlink.status)
+	if  qlink.scode != 200 {
+	  broken++
+	}
       }
     }
     if done == true {
@@ -113,8 +117,11 @@ func main() {
     start += 10
   }
 
+  fmt.Println()
+  fmt.Println("========================")
   fmt.Printf("Fetched %d links\n ", n)
-  fmt.Println("OK")
+  fmt.Printf("%d links broken\n", broken)
+  fmt.Printf("%d links OK\n", n-broken)
 
 }
 
