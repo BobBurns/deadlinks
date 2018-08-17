@@ -51,46 +51,66 @@ func main() {
     scode int
     status string
   }
+  // Fetch 10 links at a time to ease file descriptor usage
 
-  queue := make(chan Link, len(links))
-  var wg sync.WaitGroup
-  wg.Add(len(links))
-
-  for _, l := range links {
-    go func(ln string) {
-
-      defer wg.Done()
-      curlin := Link{
-	uri: fixUrl(ln, base),
-      }
-      if curlin.uri == "" {
-	return
-      }
-      fmt.Println("fetching... ", curlin.uri)
-      s, c, err := fetchStatus(curlin.uri)
-
-      if err != nil {
-	fmt.Println("Errors found: ", err)
-	curlin.status = err.Error()
-      } else {
-	curlin.status = s
-	curlin.scode = c
-      }
-      queue <- curlin
-    }(l)
-
-
-  }
-  wg.Wait()
-  close(queue)
-
-  for qlink := range queue {
-    if *aFlag || qlink.scode != 200 {
-      fmt.Printf("[%d]\t%s\t%s\n", qlink.scode, qlink.uri, qlink.status)
+  start := 0
+  done := false
+  n := len(links)
+  limit := 10
+  for {
+    if n - start < 10 {
+      limit = n - start
     }
+    fmt.Printf(".")
+    queue := make(chan Link, limit)
+    var wg sync.WaitGroup
+    wg.Add(limit)
+
+    for i := start; i<start+10; i++ {
+      if i == n {
+	done = true
+	break
+      }
+      go func(ln string) {
+
+	defer wg.Done()
+	curlin := Link{
+	  uri: fixUrl(ln, base),
+	}
+	if curlin.uri == "" {
+	  return
+	}
+	//fmt.Println("fetching... ", curlin.uri)
+	s, c, err := fetchStatus(curlin.uri)
+
+	if err != nil {
+//	  fmt.Println("Errors found: ", err)
+	  curlin.status = err.Error()
+	} else {
+	  curlin.status = s
+	  curlin.scode = c
+	}
+	queue <- curlin
+      }(links[i])
+
+
+    }
+
+    wg.Wait()
+    close(queue)
+
+    for qlink := range queue {
+      if *aFlag || qlink.scode != 200 {
+	fmt.Printf("[%d]\t%s\t%s\n", qlink.scode, qlink.uri, qlink.status)
+      }
+    }
+    if done == true {
+      break
+    }
+    start += 10
   }
 
-
+  fmt.Printf("Fetched %d links\n ", n)
   fmt.Println("OK")
 
 }
@@ -137,7 +157,7 @@ func fetchStatus (uri string) (string, int, error) {
 			InsecureSkipVerify: true,
 		},
 	}
-	timeout := time.Duration(60 * time.Second)
+	timeout := time.Duration(30 * time.Second)
 	client := http.Client{Transport: transport, Timeout: timeout}
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
