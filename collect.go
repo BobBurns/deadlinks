@@ -34,22 +34,44 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-func collectLinks(httpBody io.ReadCloser) []string {
+//bob modification:
+// take out redundant link check
+// return array of link text
+// handle links without text
+
+func collectLinks(httpBody io.ReadCloser) ([]string, []string) {
 	links := []string{}
-	col := []string{}
+	// col := []string{}
+	txts := []string{}
 	page := html.NewTokenizer(httpBody)
+	previous := false
 	for {
 		tokenType := page.Next()
 		if tokenType == html.ErrorToken {
-			return links
+			return links, txts
 		}
+		if tokenType == html.TextToken && previous == true {
+		  txts = append(txts, strings.TrimSpace(string(page.Text())))
+		  previous = false
+		}
+
 		token := page.Token()
+		// handle image links etc
+		if previous == true && tokenType == html.EndTagToken && token.DataAtom.String() == "a" {
+		  txts = append(txts, "")
+		  previous = false
+		}
+
 		if tokenType == html.StartTagToken && token.DataAtom.String() == "a" {
 			for _, attr := range token.Attr {
 				if attr.Key == "href" {
 					tl := trimHash(attr.Val)
-					col = append(col, tl)
-					resolv(&links, col)
+					// don't need this now I'm checking all links
+					//col = append(col, tl)
+					// skip resolv
+					// resolv(&links, col)
+					links = append(links, tl)
+					previous = true
 				}
 
 			}

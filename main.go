@@ -44,10 +44,11 @@ func main() {
     log.Fatal("problem with fetchBody", err)
   }
 
-  links := collectLinks(startbody)
+  links, texts := collectLinks(startbody)
 
   type Link struct {
     uri string
+    linkText string
     scode int
     status string
   }
@@ -72,11 +73,12 @@ func main() {
 	done = true
 	break
       }
-      go func(ln string) {
+      go func(ln string, txt string) {
 
 	defer wg.Done()
 	curlin := Link{
 	  uri: fixUrl(ln, base),
+	  linkText: txt,
 	}
 	if curlin.uri == "" {
 	  return
@@ -94,7 +96,7 @@ func main() {
 	  resp.Body.Close()
 	}
 	queue <- curlin
-      }(links[i])
+      }(links[i], texts[i])
 
 
     }
@@ -105,7 +107,7 @@ func main() {
     fmt.Println()
     for qlink := range queue {
       if *aFlag || qlink.scode != 200 {
-	fmt.Printf("[%d]\t%s\t%s\n", qlink.scode, qlink.uri, qlink.status)
+	fmt.Printf("[%d]\t%s\t%s [%s]\n", qlink.scode, qlink.uri, qlink.status, qlink.linkText)
 	if  qlink.scode != 200 {
 	  broken++
 	}
