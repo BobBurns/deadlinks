@@ -11,3 +11,7 @@ INSTALL
 ========
 in deadlinks directory, $ go build
 
+
+UPDATE
+=======
+v2 adding link text to output
