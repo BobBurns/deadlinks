@@ -46,6 +46,25 @@ func main() {
 
   links, texts := collectLinks(startbody)
 
+  // if there is a difference between links and texts
+  // likely there is an issue with the html
+  n := len(links)
+  if len(links) != len(texts) {
+    input := ""
+    fmt.Fprintf(os.Stderr, "There is an issue with the web page you have requested to scan.\n" +
+      "Possibly nested html anchor tags. Not all links may be scanned.\nContinue anyway? [Y/n] ")
+    fmt.Scanf("%s", &input)
+    if input == "n" || input == "N" || input == "no" {
+      fmt.Fprintf(os.Stderr, "\nBye bye\n")
+      os.Exit(0)
+    }
+    fmt.Println()
+    // adjust n
+    if n > len(texts) {
+      n = len(texts)
+    }
+  }
+
   type Link struct {
     uri string
     linkText string
@@ -56,7 +75,6 @@ func main() {
 
   start := 0
   done := false
-  n := len(links)
   broken := 0
   limit := 10
   for {
@@ -120,7 +138,7 @@ func main() {
   }
 
   fmt.Println()
-  fmt.Println("========================")
+  fmt.Println("================================================================================")
   fmt.Printf("Fetched %d links\n ", n)
   fmt.Printf("%d links broken\n", broken)
   fmt.Printf("%d links OK\n", n-broken)
